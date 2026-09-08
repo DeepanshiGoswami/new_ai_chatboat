@@ -530,8 +530,9 @@ class ChatbotSystem:
             print("❌ GROQ_API_KEY not found")
             self.llm = None
         else:
+            model_name = os.getenv("GROQ_MODEL", "llama-3.1-8b-instant")
             self.llm = ChatGroq(
-                model="llama-3.1-8b-instant",
+                model=model_name,
                 groq_api_key=groq_api_key,
                 temperature=0.7
             )
@@ -544,8 +545,11 @@ class ChatbotSystem:
     def embeddings(self):
         if self._embeddings is None:
             try:
+                emb_model = os.getenv("SENTENCE_TRANSFORMER", "all-MiniLM-L6-v2")
+                if not emb_model.startswith("sentence-transformers/") and "/" not in emb_model:
+                    emb_model = f"sentence-transformers/{emb_model}"
                 self._embeddings = HuggingFaceEmbeddings(
-                    model_name="sentence-transformers/all-MiniLM-L6-v2",
+                    model_name=emb_model,
                     model_kwargs={'device': 'cpu'},
                     encode_kwargs={'normalize_embeddings': True}
                 )
