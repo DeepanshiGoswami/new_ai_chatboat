@@ -536,26 +536,45 @@ class ChatbotSystem:
                 temperature=0.7
             )
         
-        # Initialize embeddings
-        try:
-            self.embeddings = HuggingFaceEmbeddings(
-                model_name="sentence-transformers/all-MiniLM-L6-v2",
-                model_kwargs={'device': 'cpu'},
-                encode_kwargs={'normalize_embeddings': True}
-            )
-        except Exception as e:
-            print(f"⚠️ Embeddings error: {e}")
-            self.embeddings = None
-        
-        # Initialize vector store
-        try:
-            self.vector_store = Chroma(
-                embedding_function=self.embeddings,
-                persist_directory="./chroma_db"
-            )
-        except Exception as e:
-            print(f"⚠️ Vector store error: {e}")
-            self.vector_store = None
+        # Lazy embeddings & vector store
+        self._embeddings = None
+        self._vector_store = None
+
+    @property
+    def embeddings(self):
+        if self._embeddings is None:
+            try:
+                self._embeddings = HuggingFaceEmbeddings(
+                    model_name="sentence-transformers/all-MiniLM-L6-v2",
+                    model_kwargs={'device': 'cpu'},
+                    encode_kwargs={'normalize_embeddings': True}
+                )
+            except Exception as e:
+                print(f"⚠️ Embeddings error: {e}")
+                self._embeddings = None
+        return self._embeddings
+
+    @embeddings.setter
+    def embeddings(self, val):
+        self._embeddings = val
+
+    @property
+    def vector_store(self):
+        if self._vector_store is None:
+            try:
+                if self.embeddings:
+                    self._vector_store = Chroma(
+                        embedding_function=self.embeddings,
+                        persist_directory="./chroma_db"
+                    )
+            except Exception as e:
+                print(f"⚠️ Vector store error: {e}")
+                self._vector_store = None
+        return self._vector_store
+
+    @vector_store.setter
+    def vector_store(self, val):
+        self._vector_store = val
         
         # Text splitter
         self.text_splitter = RecursiveCharacterTextSplitter(
@@ -736,21 +755,18 @@ ANSWER:"""
 
 # MAIN APPLICATION
 
-# Initialize the chatbot system
-chatbot_system = ChatbotSystem()
+# Cached Chatbot System & Workflow Builders
+@st.cache_resource
+def get_chatbot_system():
+    return ChatbotSystem()
 
-# Initialize image processor
-if 'image_processor' not in st.session_state:
-    image_processor = ImageProcessor()
-    st.session_state.image_processor = image_processor
-
-# Build workflow
-def create_workflow():
+@st.cache_resource
+def create_workflow(_system):
     graph = StateGraph(State)
-    graph.add_node("route_question", chatbot_system.route_question)
-    graph.add_node("general_chat", chatbot_system.general_chat)
-    graph.add_node("rag_retrieval", chatbot_system.rag_retrieval)
-    graph.add_node("update_memory", chatbot_system.update_memory)
+    graph.add_node("route_question", _system.route_question)
+    graph.add_node("general_chat", _system.general_chat)
+    graph.add_node("rag_retrieval", _system.rag_retrieval)
+    graph.add_node("update_memory", _system.update_memory)
     graph.add_edge(START, "route_question")
     graph.add_conditional_edges(
         "route_question",
@@ -760,8 +776,6 @@ def create_workflow():
     graph.add_edge("rag_retrieval", "update_memory")
     graph.add_edge("update_memory", END)
     return graph.compile()
-
-enhanced_chatbot = create_workflow()
 
 # Streamlit config — already set at top of file
 
@@ -1157,6 +1171,15 @@ initialize_session_state()
 if not st.session_state.authenticated:
     login_ui()
     st.stop()
+
+# Initialize the chatbot system & workflow (runs ONLY after user logs in!)
+chatbot_system = get_chatbot_system()
+enhanced_chatbot = create_workflow(chatbot_system)
+
+# Initialize image processor
+if 'image_processor' not in st.session_state:
+    st.session_state.image_processor = ImageProcessor()
+image_processor = st.session_state.image_processor
 
 # Main layout with sidebar for Control Panel
 with st.sidebar:
