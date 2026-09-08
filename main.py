@@ -527,7 +527,7 @@ class ChatbotSystem:
         # Initialize LLM
         groq_api_key = os.getenv("GROQ_API_KEY")
         if not groq_api_key:
-            st.error("❌ GROQ_API_KEY not found")
+            print("❌ GROQ_API_KEY not found")
             self.llm = None
         else:
             self.llm = ChatGroq(
