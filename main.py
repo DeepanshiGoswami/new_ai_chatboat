@@ -12,6 +12,8 @@ from sqlite3 import Error
 
 import streamlit as st
 
+print("🚀 [Step 1] Streamlit imported", flush=True)
+
 # ─── MUST be the very first Streamlit command ───
 st.set_page_config(
     page_title="AI Operating System",
@@ -19,6 +21,7 @@ st.set_page_config(
     layout="wide",
     initial_sidebar_state="expanded"
 )
+print("🚀 [Step 2] Page config set", flush=True)
 
 from dotenv import load_dotenv
 from langgraph.graph import StateGraph, add_messages, START, END
@@ -27,6 +30,7 @@ from langchain_groq import ChatGroq
 # Voice recognition imports
 import speech_recognition as sr
 from streamlit_mic_recorder import mic_recorder
+print("🚀 [Step 3] Imports completed", flush=True)
 
 # Image processing imports
 from PIL import Image
@@ -145,7 +149,9 @@ def init_database():
     conn.close()
 
 # Initialize database tables on startup
+print("🚀 [Step 4] Initializing database tables...", flush=True)
 init_database()
+print("🚀 [Step 4] Database tables ready!", flush=True)
 
 # AUTHENTICATION UTILITIES
 
@@ -1137,12 +1143,17 @@ def initialize_session_state():
     if "image_description" not in st.session_state:
         st.session_state.image_description = None
 
+print("🚀 [Step 5] Initializing session state...", flush=True)
 initialize_session_state()
+print(f"🚀 [Step 6] Session initialized. Authenticated: {st.session_state.authenticated}", flush=True)
 
 # Check authentication
 if not st.session_state.authenticated:
+    print("🚀 [Step 7] Calling login_ui()...", flush=True)
     login_ui()
+    print("🚀 [Step 8] login_ui() rendered, calling st.stop()", flush=True)
     st.stop()
+print("🚀 [Step 9] User is authenticated! Initializing chatbot...", flush=True)
 
 # Initialize the chatbot system & workflow (runs ONLY after user logs in!)
 chatbot_system = get_chatbot_system()
