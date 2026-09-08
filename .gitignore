@@ -1,0 +1,30 @@
+# Virtual environments
+venv/
+.venv/
+chatbot_env/
+
+# Environment variables
+.env
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+
+# Databases & vector stores
+*.db
+*.db-shm
+*.db-wal
+chroma_db/
+megatron_chroma_db/
+vector_store/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Scratch/debug text files
+abc.txt
+abcdef.txt'
+final.txt
+notxt.txt
