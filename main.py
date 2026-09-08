@@ -23,7 +23,6 @@ st.set_page_config(
 from dotenv import load_dotenv
 from langgraph.graph import StateGraph, add_messages, START, END
 from langchain_groq import ChatGroq
-from langchain_community.vectorstores import Chroma
 
 # Voice recognition imports
 import speech_recognition as sr
@@ -35,20 +34,13 @@ from PIL import Image
 # Suppress warnings
 warnings.filterwarnings("ignore", category=UserWarning)
 
-# Try the new import first, fall back to old one
-try:
-    from langchain_huggingface import HuggingFaceEmbeddings
-except ImportError:
-    from langchain_community.embeddings import HuggingFaceEmbeddings
-
-# Updated text splitter import
+# Text splitter import
 try:
     from langchain_text_splitters import RecursiveCharacterTextSplitter
 except ImportError:
     from langchain.text_splitter import RecursiveCharacterTextSplitter
 
 from langchain_core.documents import Document
-from langchain_community.document_loaders import PyPDFLoader, TextLoader
 import tempfile
 
 # Image model is disabled for cloud deployment (torch is too heavy)
@@ -66,14 +58,26 @@ load_dotenv()
 
 # DATABASE SETUP WITH USER AUTHENTICATION
 
-# Database path — use persistent disk mount if available, else local
-DB_PATH = os.getenv("DB_PATH", "chatbot.db")
+def get_db_path():
+    db_path = os.getenv("DB_PATH", "chatbot.db")
+    dir_name = os.path.dirname(db_path)
+    if dir_name:
+        try:
+            os.makedirs(dir_name, exist_ok=True)
+        except Exception:
+            return "chatbot.db"
+    return db_path
 
 def get_db_connection():
     """Create a new database connection per request (thread-safe)."""
-    conn = sqlite3.connect(DB_PATH, check_same_thread=False)
-    conn.execute("PRAGMA journal_mode=WAL")  # Better concurrency
-    return conn
+    db_path = get_db_path()
+    try:
+        conn = sqlite3.connect(db_path, check_same_thread=False)
+        conn.execute("PRAGMA journal_mode=WAL")
+        return conn
+    except Exception:
+        conn = sqlite3.connect("chatbot.db", check_same_thread=False)
+        return conn
 
 def init_database():
     """Initialize SQLite database with user authentication tables"""
@@ -529,6 +533,11 @@ class ChatbotSystem:
     def embeddings(self):
         if self._embeddings is None:
             try:
+                try:
+                    from langchain_huggingface import HuggingFaceEmbeddings
+                except ImportError:
+                    from langchain_community.embeddings import HuggingFaceEmbeddings
+
                 emb_model = os.getenv("SENTENCE_TRANSFORMER", "all-MiniLM-L6-v2")
                 if not emb_model.startswith("sentence-transformers/") and "/" not in emb_model:
                     emb_model = f"sentence-transformers/{emb_model}"
@@ -550,6 +559,7 @@ class ChatbotSystem:
     def vector_store(self):
         if self._vector_store is None:
             try:
+                from langchain_community.vectorstores import Chroma
                 if self.embeddings:
                     self._vector_store = Chroma(
                         embedding_function=self.embeddings,
@@ -693,6 +703,7 @@ ANSWER:"""
             # Load document
             documents = []
             if file_name.lower().endswith('.pdf'):
+                from langchain_community.document_loaders import PyPDFLoader
                 loader = PyPDFLoader(tmp_file_path)
                 documents = loader.load()
                 
