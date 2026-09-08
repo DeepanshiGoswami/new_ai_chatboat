@@ -287,30 +287,9 @@ def login_ui():
             font-family: 'Inter', sans-serif;
         }
         
-        .auth-wrapper {
-            min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            background: radial-gradient(circle at 20% 20%, rgba(14,165,233,0.15), transparent),
-                        radial-gradient(circle at 80% 80%, rgba(99,102,241,0.15), transparent),
-                        linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
-        }
-        
-        .auth-container {
-            max-width: 450px;
-            margin: 2rem auto;
-            padding: 2.5rem;
-            border-radius: 24px;
-            background: rgba(255,255,255,0.03);
-            backdrop-filter: blur(20px);
-            border: 1px solid rgba(255,255,255,0.1);
-            box-shadow: 0 8px 32px rgba(0,0,0,0.3);
-        }
-        
         .auth-title {
             text-align: center;
-            font-size: 2rem;
+            font-size: 2.2rem;
             margin-bottom: 0.5rem;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             -webkit-background-clip: text;
@@ -322,7 +301,16 @@ def login_ui():
             text-align: center;
             color: #94a3b8;
             margin-bottom: 2rem;
-            font-size: 0.9rem;
+            font-size: 0.95rem;
+        }
+        
+        [data-testid="stForm"] {
+            background: rgba(255,255,255,0.04) !important;
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255,255,255,0.12) !important;
+            border-radius: 24px !important;
+            padding: 2.5rem !important;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.4) !important;
         }
         
         .stTextInput > div > div > input {
@@ -355,12 +343,11 @@ def login_ui():
     </style>
     """, unsafe_allow_html=True)
     
-    st.markdown('<div class="auth-wrapper">', unsafe_allow_html=True)
+    st.write("")
+    st.write("")
     col1, col2, col3 = st.columns([1, 2, 1])
     
     with col2:
-        st.markdown('<div class="auth-container">', unsafe_allow_html=True)
-        
         if st.session_state.auth_mode == "login":
             st.markdown('<h2 class="auth-title">Welcome Back</h2>', unsafe_allow_html=True)
             st.markdown('<p class="auth-subtitle">Sign in to continue your AI journey</p>', unsafe_allow_html=True)
@@ -433,9 +420,6 @@ def login_ui():
                             st.rerun()
                         else:
                             st.error(f"❌ {message}")
-        
-        st.markdown('</div>', unsafe_allow_html=True)
-    st.markdown('</div>', unsafe_allow_html=True)
 
 # ENHANCED CHAT STATE
 
@@ -1115,33 +1099,6 @@ st.markdown("""
         background: rgba(255,255,255,0.3);
     }
 </style>
-
-<!-- Floating Mic Button -->
-<div id="floatingMic" class="floating-mic">
-    <div class="mic-button" id="micButton">
-        🎤
-    </div>
-</div>
-
-<script>
-    // Add recording animation when mic is clicked
-    const micButton = document.getElementById('micButton');
-    if (micButton) {
-        micButton.addEventListener('click', function() {
-            this.classList.add('recording');
-            // Find and click the mic recorder button
-            setTimeout(() => {
-                const recordButton = document.querySelector('button[kind="secondary"]');
-                if (recordButton) {
-                    recordButton.click();
-                }
-            }, 100);
-            setTimeout(() => {
-                this.classList.remove('recording');
-            }, 3000);
-        });
-    }
-</script>
 """, unsafe_allow_html=True)
 
 # Initialize session state
