@@ -524,7 +524,7 @@ class ChatbotSystem:
             print("❌ GROQ_API_KEY not found", flush=True)
             self.llm = None
         else:
-            model_name = os.getenv("GROQ_MODEL") or os.getenv("GROQ_ MODEL") or "llama-3.1-8b-instant"
+            model_name = os.getenv("GROQ_MODEL") or os.getenv("GROQ_ MODEL") or "openai/gpt-oss-20b"
             print(f"🤖 Initializing ChatGroq with model: {model_name}", flush=True)
             self.llm = ChatGroq(
                 model=model_name,
