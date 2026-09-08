@@ -516,6 +516,36 @@ class ChatbotSystem:
         # Lazy embeddings & vector store
         self._embeddings = None
         self._vector_store = None
+        
+        # Text splitter
+        try:
+            from langchain_text_splitters import RecursiveCharacterTextSplitter
+        except ImportError:
+            try:
+                from langchain.text_splitter import RecursiveCharacterTextSplitter
+            except ImportError:
+                RecursiveCharacterTextSplitter = None
+        
+        if RecursiveCharacterTextSplitter:
+            self.text_splitter = RecursiveCharacterTextSplitter(
+                chunk_size=500,
+                chunk_overlap=50,
+                separators=["\n\n", "\n", " ", ""]
+            )
+        else:
+            self.text_splitter = None
+        
+        # Available domains
+        self.domains = {
+            "general": "General knowledge conversation",
+            "education": "Educational content assistance",
+            "healthcare": "Health information guidance",
+            "finance": "Financial advice management",
+            "technology": "Tech support and programming"
+        }
+        
+        # Track processed files
+        self.processed_files = set()
 
     @property
     def embeddings(self):
@@ -561,29 +591,7 @@ class ChatbotSystem:
     @vector_store.setter
     def vector_store(self, val):
         self._vector_store = val
-        
-        # Text splitter
-        try:
-            from langchain_text_splitters import RecursiveCharacterTextSplitter
-        except ImportError:
-            from langchain.text_splitter import RecursiveCharacterTextSplitter
-        self.text_splitter = RecursiveCharacterTextSplitter(
-            chunk_size=500,
-            chunk_overlap=50,
-            separators=["\n\n", "\n", " ", ""]
-        )
-        
-        # Available domains
-        self.domains = {
-            "general": "General knowledge conversation",
-            "education": "Educational content assistance",
-            "healthcare": "Health information guidance",
-            "finance": "Financial advice management",
-            "technology": "Tech support and programming"
-        }
-        
-        # Track processed files
-        self.processed_files = set()
+
     
     def route_question(self, state: State):
         """Determine if question requires RAG or general chat"""
