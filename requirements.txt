@@ -22,7 +22,7 @@ Pillow>=10.0.0
 
 # Voice input
 SpeechRecognition>=3.8.1
-streamlit-mic-recorder>=1.0.0
+streamlit-mic-recorder>=0.0.8
 pydub>=0.25.1
 
 # Optional: Image analysis (disabled by default on cloud — set ENABLE_IMAGE_MODEL=true)
