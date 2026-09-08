@@ -11,13 +11,10 @@ __pycache__/
 *.pyc
 *.pyo
 
-# Databases & vector stores
+# Databases
 *.db
 *.db-shm
 *.db-wal
-chroma_db/
-megatron_chroma_db/
-vector_store/
 
 # OS files
 .DS_Store
