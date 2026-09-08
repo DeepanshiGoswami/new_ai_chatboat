@@ -519,12 +519,13 @@ class ImageProcessor:
 class ChatbotSystem:
     def __init__(self):
         # Initialize LLM
-        groq_api_key = os.getenv("GROQ_API_KEY")
+        groq_api_key = os.getenv("GROQ_API_KEY") or os.getenv("groq_api_key")
         if not groq_api_key:
-            print("❌ GROQ_API_KEY not found")
+            print("❌ GROQ_API_KEY not found", flush=True)
             self.llm = None
         else:
-            model_name = os.getenv("GROQ_MODEL", "llama-3.1-8b-instant")
+            model_name = os.getenv("GROQ_MODEL") or os.getenv("GROQ_ MODEL") or "llama-3.1-8b-instant"
+            print(f"🤖 Initializing ChatGroq with model: {model_name}", flush=True)
             self.llm = ChatGroq(
                 model=model_name,
                 groq_api_key=groq_api_key,
