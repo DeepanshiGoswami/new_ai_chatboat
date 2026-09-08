@@ -7,14 +7,13 @@ langchain
 langchain-community
 langchain-core
 langchain-groq
-langchain-huggingface
 langchain-text-splitters
 langgraph
 tiktoken
 
-# Vector store & embeddings
+# Vector store & embeddings (fastembed uses ONNX: ~70MB RAM vs PyTorch 600MB)
 chromadb
-sentence-transformers
+fastembed
 
 # Document processing
 pypdf

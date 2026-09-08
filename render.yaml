@@ -5,7 +5,6 @@ services:
     buildCommand: |
       apt-get update && apt-get install -y ffmpeg
       pip install -r requirements.txt
-      python -c "from sentence_transformers import SentenceTransformer; SentenceTransformer('all-MiniLM-L6-v2')"
     startCommand: streamlit run main.py --server.port=$PORT --server.address=0.0.0.0 --server.headless=true
     envVars:
       - key: GROQ_API_KEY

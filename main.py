@@ -547,10 +547,43 @@ class ChatbotSystem:
         # Track processed files
         self.processed_files = set()
 
+    def get_doc_count(self):
+        """Count indexed documents directly from Chroma DB without loading heavy embeddings or PyTorch"""
+        if os.path.exists("./chroma_db/chroma.sqlite3"):
+            try:
+                import sqlite3
+                conn = sqlite3.connect("./chroma_db/chroma.sqlite3")
+                cursor = conn.cursor()
+                cursor.execute("SELECT COUNT(*) FROM embeddings")
+                count = cursor.fetchone()[0]
+                conn.close()
+                return count
+            except Exception:
+                pass
+        return 0
+
     @property
     def embeddings(self):
         if self._embeddings is None:
+            # 1. Primary: FastEmbed (ONNX-based, ultra-low memory ~70MB RAM, no PyTorch)
             try:
+                from langchain_community.embeddings.fastembed import FastEmbedEmbeddings
+                print("⚡ Using FastEmbed (low-memory ONNX embeddings)...", flush=True)
+                self._embeddings = FastEmbedEmbeddings(
+                    model_name="sentence-transformers/all-MiniLM-L6-v2"
+                )
+                return self._embeddings
+            except Exception as fe_err:
+                print(f"ℹ️ FastEmbed not available ({fe_err}), attempting fallback...", flush=True)
+
+            # 2. Fallback: HuggingFaceEmbeddings with CPU thread limits
+            try:
+                try:
+                    import torch
+                    torch.set_num_threads(1)
+                except Exception:
+                    pass
+
                 try:
                     from langchain_huggingface import HuggingFaceEmbeddings
                 except ImportError:
@@ -565,7 +598,7 @@ class ChatbotSystem:
                     encode_kwargs={'normalize_embeddings': True}
                 )
             except Exception as e:
-                print(f"⚠️ Embeddings error: {e}")
+                print(f"⚠️ Embeddings fallback error: {e}", flush=True)
                 self._embeddings = None
         return self._embeddings
 
@@ -584,7 +617,7 @@ class ChatbotSystem:
                         persist_directory="./chroma_db"
                     )
             except Exception as e:
-                print(f"⚠️ Vector store error: {e}")
+                print(f"⚠️ Vector store error: {e}", flush=True)
                 self._vector_store = None
         return self._vector_store
 
@@ -592,7 +625,6 @@ class ChatbotSystem:
     def vector_store(self, val):
         self._vector_store = val
 
-    
     def route_question(self, state: State):
         """Determine if question requires RAG or general chat"""
         if not state["messages"]:
@@ -600,13 +632,8 @@ class ChatbotSystem:
         
         last_message = state["messages"][-1].content.lower()
         
-        # Check if we have documents
-        doc_count = 0
-        if self.vector_store and hasattr(self.vector_store, '_collection'):
-            try:
-                doc_count = self.vector_store._collection.count()
-            except:
-                pass
+        # Check if we have documents without loading heavy embeddings
+        doc_count = self.get_doc_count()
         
         if doc_count > 0:
             rag_keywords = ["pdf", "upload", "document", "file", "according to", "based on", 
@@ -1202,12 +1229,7 @@ with st.sidebar:
     st.markdown('<div class="control-section">', unsafe_allow_html=True)
     st.markdown('<div class="control-title">📊 System Status</div>', unsafe_allow_html=True)
     
-    doc_count = 0
-    if chatbot_system.vector_store and hasattr(chatbot_system.vector_store, '_collection'):
-        try:
-            doc_count = chatbot_system.vector_store._collection.count()
-        except:
-            pass
+    doc_count = chatbot_system.get_doc_count()
     
     if doc_count > 0:
         st.markdown(f"""
