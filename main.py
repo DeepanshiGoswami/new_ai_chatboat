@@ -1,12 +1,13 @@
 import os
 import uuid
+import tempfile
 import sqlite3
 import io
 import time
 import hashlib
 import hmac
 import warnings
-from typing import TypedDict, Annotated, List, Optional
+from typing import TypedDict, Annotated, List, Optional, Any
 from datetime import datetime
 from sqlite3 import Error
 
@@ -32,30 +33,8 @@ import speech_recognition as sr
 from streamlit_mic_recorder import mic_recorder
 print("🚀 [Step 3] Imports completed", flush=True)
 
-# Image processing imports
-from PIL import Image
-
 # Suppress warnings
 warnings.filterwarnings("ignore", category=UserWarning)
-
-# Text splitter import
-try:
-    from langchain_text_splitters import RecursiveCharacterTextSplitter
-except ImportError:
-    from langchain.text_splitter import RecursiveCharacterTextSplitter
-
-from langchain_core.documents import Document
-import tempfile
-
-# Image model is disabled for cloud deployment (torch is too heavy)
-# Set ENABLE_IMAGE_MODEL=true in env vars to enable locally
-IMAGE_MODEL_AVAILABLE = False
-if os.getenv("ENABLE_IMAGE_MODEL", "false").lower() == "true":
-    try:
-        from transformers import VisionEncoderDecoderModel, ViTImageProcessor, AutoTokenizer
-        IMAGE_MODEL_AVAILABLE = True
-    except ImportError:
-        print("Install: pip install transformers torch torchvision Pillow")
 
 # Load environment variables
 load_dotenv()
@@ -438,7 +417,7 @@ class State(TypedDict):
     domain: str
     session_id: str
     user_id: Optional[str]
-    retrieved_docs: List[Document]
+    retrieved_docs: List[Any]
     requires_rag: bool
 
 # IMAGE PROCESSOR CLASS WITH CROSS-QUESTION SUPPORT
@@ -449,8 +428,9 @@ class ImageProcessor:
         Disabled by default on cloud deployments (torch is ~2.5GB).
         Set ENABLE_IMAGE_MODEL=true to enable."""
         self.available = False
-        if IMAGE_MODEL_AVAILABLE:
+        if os.getenv("ENABLE_IMAGE_MODEL", "false").lower() == "true":
             try:
+                from transformers import VisionEncoderDecoderModel, ViTImageProcessor, AutoTokenizer
                 self.model = VisionEncoderDecoderModel.from_pretrained(
                     "nlpconnect/vit-gpt2-image-captioning"
                 )
@@ -470,6 +450,7 @@ class ImageProcessor:
             return "⚠️ Image model not available. Set ENABLE_IMAGE_MODEL=true and install: pip install transformers torch torchvision Pillow"
 
         try:
+            from PIL import Image
             # Open and convert image
             if hasattr(image_file, 'read'):
                 image = Image.open(image_file).convert('RGB')
@@ -582,6 +563,10 @@ class ChatbotSystem:
         self._vector_store = val
         
         # Text splitter
+        try:
+            from langchain_text_splitters import RecursiveCharacterTextSplitter
+        except ImportError:
+            from langchain.text_splitter import RecursiveCharacterTextSplitter
         self.text_splitter = RecursiveCharacterTextSplitter(
             chunk_size=500,
             chunk_overlap=50,
@@ -720,6 +705,7 @@ ANSWER:"""
                 except:
                     text_content = file_content.decode('latin-1', errors='ignore')
                 
+                from langchain_core.documents import Document
                 doc = Document(
                     page_content=text_content,
                     metadata={"source": file_name, "type": "text"}
